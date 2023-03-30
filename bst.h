@@ -1,11 +1,15 @@
 #ifndef BST_H
 #define BST_H
 
+
 #include <iostream>
 #include <exception>
 #include <cstdlib>
 #include <utility>
-#include "equal-paths.h"
+#include <algorithm>
+#include <iostream>
+
+
 
 /**
  * A templated class for a Node in a search tree.
@@ -151,7 +155,9 @@ Node<Key, Value>* Node<Key, Value>::getRight() const
 template<typename Key, typename Value>
 void Node<Key, Value>::setParent(Node<Key, Value>* parent)
 {
-    parent_ = parent;
+        parent_ = parent;
+    
+    
 }
 
 /**
@@ -244,31 +250,35 @@ protected:
     // Note:  static means these functions don't have a "this" pointer
     //        and instead just use the input argument.
 
+
     // Provided helper functions
     virtual void printRoot (Node<Key, Value> *r) const;
     virtual void nodeSwap( Node<Key,Value>* n1, Node<Key,Value>* n2) ;
 
     // Add helper functions here
-    void Postorder(Node<Key, Value>* root_);
+    void PostOrder(Node<Key, Value>* node);
+    bool balancechecker(Node <Key, Value> *nodeptr) const; 
 //above, helper function for clear function, remove nodes
 
+    int treeheight(const Node<Key,Value> * node) const; 
 protected:
     Node<Key, Value>* root_;
     // You should not need other data members
 };
 
 template<typename Key, typename Value>
-void BinarySearchTree<Key, Value>::PostOrder(Node<Key, Value>* root_)
+void BinarySearchTree<Key, Value>::PostOrder(Node<Key, Value>* node)
 {
-  if(root_ == NULL){ 
-    return; 
+  if(node != NULL){ 
+    PostOrder(node->getLeft()); 
+    PostOrder(node->getRight());
+    delete node;  
    } 
-   Postorder(root_->left); 
-   Postorder(root_->right);
+  
    
    
-   delete root_; 
-   root_ = NULL; 
+   
+ 
    
 }
 
@@ -287,7 +297,7 @@ template<class Key, class Value>
 BinarySearchTree<Key, Value>::iterator::iterator(Node<Key,Value> *ptr): current_(ptr)
 {
     // TODO
-    Node<Key,Value>* iterator it = ptr; 
+    
 }
 
 /**
@@ -332,7 +342,7 @@ BinarySearchTree<Key, Value>::iterator::operator==(
 { //iterator through the tree values, smallest to largest, therefore succ.,succ.,succ.
     // TODO
     //we defined current_ as an iterator
-    
+    return this->current_ == rhs.current_; 
 }
 
 /**
@@ -345,6 +355,7 @@ BinarySearchTree<Key, Value>::iterator::operator!=(
     const BinarySearchTree<Key, Value>::iterator& rhs) const
 {
     // TODO
+    return this->current_ != rhs.current_; 
 
 }
 
@@ -357,6 +368,8 @@ typename BinarySearchTree<Key, Value>::iterator&
 BinarySearchTree<Key, Value>::iterator::operator++()
 {
     // TODO
+    this->current_ = successor(this->current_); 
+    return *this; 
 
 }
 
@@ -389,6 +402,7 @@ BinarySearchTree<Key, Value>::~BinarySearchTree()
 {
     // TODO
     clear(); 
+
 
 }
 
@@ -472,40 +486,75 @@ template<class Key, class Value>
 void BinarySearchTree<Key, Value>::insert(const std::pair<const Key, Value> &keyValuePair)
 {
     // TODO
-    if(Key == (internalFind(Key))->getKey()){
-        (internalFind(Key))->setValue(keyValuePair->getValue()); 
-    }
-    else{
-        while(root_ != NULL){
-        if(root_->getKey() > keyValuePair->getKey()){
-            if(root_->getLeft == NULL){
-                break; 
+     
+   // Node<Key, Value>* node = internalFind(keyValuePair.first); //returns a node of found key
+    Node<Key, Value>* current = root_; //set current to point to root, we don't want to change where root is pointing to
+    if(root_ == NULL){ //check if empty tree, insert "just root"
+        Node<Key, Value> *nullNode = new Node<Key, Value>(keyValuePair.first, keyValuePair.second, NULL);
+        root_ = nullNode; 
+        return; 
+      }
+
+    //override value
+    // else if(node != NULL && (keyValuePair.first) == node->getKey()){ 
+    //     node->setValue(keyValuePair.second); 
+    // }
+
+    else{ //enters if it doesn't find the key, so we insert
+        while(current != NULL){
+
+        if(current->getKey() > keyValuePair.first){ //if "curr parent" key is  greater than "insert's" key
+            if(current->getLeft() != NULL){
+                current = current->getLeft();
+                // Node<Key, Value> *newNode = new Node<Key, Value>(keyValuePair.first, keyValuePair.second, current_);
+                // current_->setLeft(newNode); 
+                // break; 
 
             }
-            root_ = root_->left_; 
+            else{
+              Node<Key, Value> *newNode = new Node<Key, Value>(keyValuePair.first, keyValuePair.second, current);
+                current->setLeft(newNode); 
+                break; 
+            } 
         }
-        else if(root_->getKey() < key){
-            if(root_->getRight() == NULL){
+
+        else if(current->getKey() < keyValuePair.first){ //if "curr parent" key is  less than "insert's" key
+            if(current->getRight() != NULL){
+                current = current->getRight(); 
+                // Node<Key, Value> *newNode = new Node<Key, Value>(keyValuePair.first, keyValuePair.second, current_);
+                // current_->setRight(newNode);
+                // break; 
+            }
+            else{
+              Node<Key, Value> *newNode = new Node<Key, Value>(keyValuePair.first, keyValuePair.second, current);
+                current->setRight(newNode);
                 break; 
             }
-            root_ = root_->right_; 
         }
-        
+
+
+        else if(current->getKey() == keyValuePair.first){
+            current->setValue(keyValuePair.second);
+            return;
+        }
+         
         
         }
-         Node<Key, Value> *newNode = new Node<Key, Value>(keyValuePair->getKey(), keyValuePair->getVal(), root_); 
-         if(root_->getKey() > newNode->getKey()){
-             root_->setLeft(newNode); 
-         }
-         else if(root_->getKey() < newNode->getKey()){
-             root_->setRight(newNode); 
+        //Node<Key, Value> *newNode = new Node<Key, Value>(keyValuePair.first, keyValuePair.second, current_);
+        //allocate storage for a new node
+        //  if(current_->getKey() > newNode->getKey()){
+        //      current_->setLeft(newNode); 
+        //  }
+        //  else if(current_->getKey() < newNode->getKey()){
+        //      current_->setRight(newNode); 
     }
+      }
+         
 
 
 
-    }
 
-}
+
 
 
 /**
@@ -518,112 +567,132 @@ void BinarySearchTree<Key, Value>::remove(const Key& key) //finished?
 {
     Node<Key, Value> *keysnode = internalFind(key); 
     // TODO
-    if(key != internalFind(key)->getKey()){ //if we can't find the key to remove, return NULL
-        return NULL; 
+    Node<Key, Value> *current = keysnode;
+   if(internalFind(key) == NULL){ //if we can't find the key to remove, return NULL
+        return; 
     }
-    else{
-        //case 1: key to remove has no children
-        if(keysnode->getLeft() == NULL && keysnode->getRight() == NULL){ //if key to remove has no children 
-            if(keysnode->getParent())->getRight() == keysnode){ //if it is left child, deallocate
-                keysnode->getParent()->setRight(NULL);  
-                delete keysnode;
-                
-            }
-            else if(keysnode->getParent())->getLeft() == keysnode) //if it is right child, deallocate
-            {
-                key->getParent())->setLeft(NULL);
-                delete keysnode;
-                Node<Key, Value>* current
-                
+    else if(current->getRight() == NULL && current->getLeft() == NULL && current->getParent() == NULL){ //check if one element
+        delete root_; 
+        root_ = NULL; 
+        return;
+        
+    }
+    else if(current->getRight() != NULL && current->getLeft() == NULL && current->getParent() == NULL){
+        current->getRight()->setParent(NULL); 
+        root_ = current->getRight(); 
+        delete current; 
+        return;
+    }
+    else if(current->getRight() == NULL && current->getLeft() != NULL && current->getParent() == NULL){
+        current->getLeft()->setParent(NULL); 
+        root_ = current->getLeft(); 
+        delete current; 
+        return;
+    }
+    
 
-            }
+
+    //case 1: key to remove has no children
+    if(keysnode->getLeft() == NULL && keysnode->getRight() == NULL){ //if key to remove has no children 
+        
+        if((keysnode->getParent())->getRight() == keysnode){ //if it is RIGHT child, deallocate
+            keysnode->getParent()->setRight(NULL);  
+            delete keysnode;
+            return;
+            
         }
-        //case 2:key to remove has one child, either left or right, 
-        else if(keysnode->getLeft() != NULL && keysnode->getLeft() == NULL){ //if it has a left child
-            if(keysnode->getParent())->getRight() == keysnode){ //if key to remove is a right child
-                keysnode->getParent()->setRight(keysnode->getLeft()); //sets parent to point to removal's right child
- 
-                delete keysnode;//deallocate
-                
-            }
-            else if(keysnode->getParent())->getLeft() == keysnode){ //if key to remove is left child
-                keysnode->getParent()->setLeft(keysnode->getLeft()); //sets parent to point to removal's left child
- 
-                delete keysnode;
-            }
+        else if((keysnode->getParent())->getLeft() == keysnode) //if it is left child, deallocate
+        {
+            keysnode->getParent()->setLeft(NULL);
+            delete keysnode;
+            return;
+            
 
-        else if(key->getLeft() == NULL && key->getLeft() != NULL){ //same logic as above, but reversed
-            if(keysnode->getParent())->getRight() == keysnode){
-                keysnode->getParent()->setRight(keysnode->getRight()); 
- 
-                delete keysnode;
-                
-            }
-            else if(keysnode->getParent())->getLeft() == keysnode){
-                keysnode->getParent()->setLeft(keysnode->getRight()); 
- 
-                delete keysnode;
-            }
         }
     }
+
+    //case 2:key to remove has one child, either left or right, 
+    else if(keysnode->getLeft() != NULL && keysnode->getRight() == NULL){ //if it has a left child
+        
+        if((keysnode->getParent())->getRight() == keysnode){ //if key to remove is a right child
+            keysnode->getParent()->setRight(keysnode->getLeft()); //sets parent to point to removal's right child
+          (keysnode->getLeft())->setParent(keysnode->getParent()); 
+            delete keysnode;//deallocate
+            
+        }
+        else if((keysnode->getParent())->getLeft() == keysnode){ //if key to remove is left child
+            keysnode->getParent()->setLeft(keysnode->getLeft()); //sets parent to point to removal's left child
+            (keysnode->getLeft())->setParent(keysnode->getParent());
+            delete keysnode;
+        }
+    }
+    else if(keysnode->getLeft() == NULL && keysnode->getRight() != NULL){ //same logic as above, but reversed
+        if((keysnode->getParent())->getRight() == keysnode){
+            keysnode->getParent()->setRight(keysnode->getRight()); 
+            (keysnode->getRight())->setParent(keysnode->getParent());
+            delete keysnode;
+            
+        }
+        else if((keysnode->getParent())->getLeft() == keysnode){
+            keysnode->getParent()->setLeft(keysnode->getRight()); 
+            (keysnode->getRight())->setParent(keysnode->getParent());
+            delete keysnode;
+        }
+    }
+    
+
     //Node<Key, Value>* 
     //BinarySearchTree<Key, Value>::predecessor(Node<Key, Value>* current)
      
     //case 3: removal has two children, utilise pred/successor methodrecursion?
-    else if(keysnode->getLeft() != NULL && keynode->getRight() != NULL){
+    else if(keysnode->getLeft() != NULL && keysnode->getRight() != NULL){
         Node<Key,Value>* prednode = predecessor(keysnode);
         nodeSwap(prednode, keysnode); 
          //now we have swapped pred node and key to remove node
         //now, key, which is swapped with pred, can only have 1 child or 0 children
         
         
-        //remove(key); could this work?
+        //remove(key); 
         
         //SAME PROCESS, BROUGHT IT DOWN TO CASE 1 OR 2: 0 OR 1 children
         //case one: 0 children
         if(keysnode->getLeft() == NULL && keysnode->getRight() == NULL){ //if key to remove has no children 
-            if(keysnode->getParent())->getRight() == keysnode){ //if it is left child, deallocate
-                keysnode->getParent()->setRight(NULL);  
-                delete keysnode;
-                
+            
+            if((keysnode->getParent())->getRight() == keysnode){ //if it is RIGHT child, deallocate
+            keysnode->getParent()->setRight(NULL);  
+            delete keysnode;
+            return;
+            
             }
-            else if(keysnode->getParent())->getLeft() == keysnode) //if it is right child, deallocate
+            else if((keysnode->getParent())->getLeft() == keysnode) //if it is left child, deallocate
             {
-                key->getParent())->setLeft(NULL);
+                keysnode->getParent()->setLeft(NULL);
                 delete keysnode;
-                Node<Key, Value>* current
+                return;
                 
 
             }
         }
-        //case two: 1 child
-        else if(keysnode->getLeft() != NULL && keysnode->getLeft() == NULL){ //if it has a left child
-            if(keysnode->getParent())->getRight() == keysnode){ //if key to remove is a right child
+        // predecessor of node with 2 children cannot have right child.
+        //case 2:key to remove has one child, either left or right, 
+        else if(keysnode->getLeft() != NULL){ //if it has a left child
+            
+            if((keysnode->getParent())->getRight() == keysnode){ //if key to remove is a right child
                 keysnode->getParent()->setRight(keysnode->getLeft()); //sets parent to point to removal's right child
- 
+              (keysnode->getLeft())->setParent(keysnode->getParent()); 
                 delete keysnode;//deallocate
+                return;
                 
             }
-            else if(keysnode->getParent())->getLeft() == keysnode){ //if key to remove is left child
+            else if((keysnode->getParent())->getLeft() == keysnode){ //if key to remove is left child
                 keysnode->getParent()->setLeft(keysnode->getLeft()); //sets parent to point to removal's left child
- 
+                (keysnode->getLeft())->setParent(keysnode->getParent());
                 delete keysnode;
+                return;
             }
 
-        else if(key->getLeft() == NULL && key->getLeft() != NULL){ //same logic as above, but reversed
-            if(keysnode->getParent())->getRight() == keysnode){
-                keysnode->getParent()->setRight(keysnode->getRight()); 
- 
-                delete keysnode;
-                
-            }
-            else if(keysnode->getParent())->getLeft() == keysnode){
-                keysnode->getParent()->setLeft(keysnode->getRight()); 
- 
-                delete keysnode;
-            }
         }
-    }
+    
 
     }
 
@@ -633,7 +702,7 @@ void BinarySearchTree<Key, Value>::remove(const Key& key) //finished?
 template<class Key, class Value>
 Node<Key, Value>* BinarySearchTree<Key, Value>::successor(Node<Key, Value>* current)
 {
-    if(current->getRight() != NULL){
+    if(current->getRight() != NULL){ 
         current = current->getRight(); 
         while(current->getLeft() != NULL){
             current = current->getLeft(); 
@@ -641,12 +710,12 @@ Node<Key, Value>* BinarySearchTree<Key, Value>::successor(Node<Key, Value>* curr
         return current; 
     }
     else{
-        while(current != (current->getParent())->getLeft()){
+        while(current->getParent() != NULL && current != (current->getParent())->getLeft()){
             current = current->getParent(); 
         }
         return current->getParent(); 
     }
-    
+    return current; 
 
 }
 
@@ -661,12 +730,13 @@ Node<Key, Value>* BinarySearchTree<Key, Value>::predecessor(Node<Key, Value>* cu
         }
         return current; 
     }
-    else{
-        while(current != (current->getParent())->getRight()){
+    else{ 
+        while(current->getParent() != NULL && current != (current->getParent())->getRight()){
             current = current->getParent(); 
         }
         return current->getParent(); 
     }
+    return current; 
 }
 
 
@@ -680,6 +750,7 @@ void BinarySearchTree<Key, Value>::clear()
 //
 
    PostOrder(root_); 
+   root_ = NULL; 
 
     // TODO
 
@@ -695,10 +766,11 @@ BinarySearchTree<Key, Value>::getSmallestNode() const
 {
     //How would I find smallest node?
     // TODO 
-    while(root_->getLeft() !=NULL){
-        root_ = root->getLeft(); 
+    Node <Key, Value>* newnode = root_; 
+    while(newnode->getLeft() !=NULL){
+        newnode = newnode->getLeft(); 
     }
-    return root_; //ez
+    return newnode; //ez
 }
 
 /**
@@ -710,18 +782,22 @@ template<typename Key, typename Value>
 Node<Key, Value>* BinarySearchTree<Key, Value>::internalFind(const Key& key) const
 {
     // TO do
-    while(root_ != NULL){
-        if(root_->getKey > key){
-            root_ = root_->left_; 
+    Node <Key, Value>* newnode = root_; 
+    while(newnode != NULL){
+        if(newnode->getKey() > key){
+            newnode = newnode->getLeft(); 
         }
-        else if(root_->getKey() >=< key){
-            root_ = root_->right_; 
+        else if(newnode->getKey() < key){
+            newnode = newnode->getRight(); 
         }
-        else if(root_->getKey() == key){
-            return root_; //we return the value
+        else if(newnode->getKey() == key){
+            return newnode; //we return the value
         }
+        
+
     }
     return NULL; 
+    
 
     // std::pair<const Key, Value> item_;
     // Node<Key, Value>* parent_;
@@ -736,19 +812,42 @@ template<typename Key, typename Value>
 bool BinarySearchTree<Key, Value>::isBalanced() const
 {
     // TODO
-    if(root_ == NULL){
-        return true; 
+    return balancechecker(root_); 
+}
+
+
+template<typename Key, typename Value>
+int BinarySearchTree<Key, Value>::treeheight(const Node<Key,Value> * node) const{
+    if(node == NULL){ //if an empty tree, no root
+        return 0; 
     }
-    int leftheight = treeheight(root->left); //finds the height of left subtree
-    int rightheight = treeheight(root->right); //finds the height of right subtree
-    if(abs(leftheight - rightheight) <= 1)){
-        return true;
-    }
-    else{
-        return false; 
+        int leftsubheight = treeheight(node->getLeft()); //using post-order, returning
+        //max of left and right when returning
+        int rightsubheight = treeheight(node->getRight()); 
+
+        if(rightsubheight > leftsubheight){
+          return rightsubheight + 1; 
+        }
+        else{
+          return leftsubheight + 1; 
+        }
     }
 
-}
+template<typename Key, typename Value>
+bool BinarySearchTree<Key,Value>::balancechecker(Node <Key, Value> * nodeptr) const{
+    if(nodeptr == NULL){
+      return true; 
+    }
+    int leftheight = this->treeheight(nodeptr->getLeft());
+    int rightheight = this->treeheight(nodeptr->getRight());
+  if(abs(leftheight - rightheight) <= 1 && balancechecker(nodeptr->getRight()) && balancechecker(nodeptr->getLeft())){
+        return true;
+  }
+  return 0; 
+
+  
+} 
+
 
 
 
